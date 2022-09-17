@@ -1,0 +1,370 @@
+
+from asyncio import events
+from tkinter import *
+import sqlite3
+from tkinter import messagebox
+from winreg import QueryValue
+
+root = Tk()
+root.title('House Event Calulator Database')
+root.geometry("350x550")
+#Database
+
+#Create a database or connect to one
+conn = sqlite3.connect('prototype_number1.db')
+
+
+#create cursor
+c = conn.cursor()
+
+#create table
+
+c.execute("""CREATE TABLE events (
+        name_event text, 
+        sport_event text,
+        red_house integer,
+        blue_house integer,
+        yellow_house integer,
+        green_house integer
+        )""")
+
+
+
+
+
+
+
+def update():
+    #create a database or connect to one
+    conn = sqlite3.connect('prototype_number1.db')
+    c = conn.cursor()
+
+    record_id = delete_box.get()
+
+    c.execute("""UPDATE events SET
+        name_event = :name,
+        sport_event = :event,
+        red_house = :red,
+        blue_house = :blue,
+        yellow_house = :yellow,
+        green_house = :green
+
+        WHERE oid = :oid""",
+        {
+        'name': name_event_editor.get(),
+        'event': sport_event_editor.get(),
+        'red': red_house_editor.get(),
+        'blue': blue_house_editor.get(),
+        'yellow': yellow_house_editor.get(),
+        'green': green_house_editor.get(),
+        'oid': record_id
+        })
+    #commit change
+    conn.commit()
+
+    #close connection
+    conn.close()  
+
+    editor.destroy()
+
+
+def QueryValue():
+    conn = sqlite3.connect('prototype_number1.db')
+    #create cursor
+    c = conn.cursor()
+    c.execute("SELECT *, oid FROM events")
+    records = c.fetchall()
+    print(records)
+    print_records = ''
+    for record in records:
+        print_records += "Record ID: (" + str(record[6]) + ") " + str(record[0]) + "\n"
+
+    query_label = Label(root, text=print_records)
+    query_label.grid(row=15,column=0, columnspan=3)
+    
+    conn.commit()
+    conn.close()
+
+
+#create edit function to update record
+def edit():
+    global editor
+    editor = Tk()
+    editor.title('Update a record')
+    editor.geometry("400x200")
+
+    #Create a database or connect to one
+    conn = sqlite3.connect('prototype_number1.db')
+    #create cursor
+    c = conn.cursor()
+
+    record_id = delete_box.get() 
+
+    #query the database
+    c.execute("SELECT * FROM events WHERE oid = " + record_id)
+    records = c.fetchall()
+
+    #create global variables for text box names
+    global name_event_editor
+    global sport_event_editor
+    global red_house_editor
+    global blue_house_editor
+    global yellow_house_editor
+    global green_house_editor
+
+
+    #create text boxes
+    name_event_editor = Entry(editor, width=30)
+    name_event_editor.grid(row=0, column=1, padx=20, pady=(10,0))
+    sport_event_editor = Entry(editor, width=30)
+    sport_event_editor.grid(row=1, column=1)
+    red_house_editor = Entry(editor, width=30)
+    red_house_editor.grid(row=2, column=1)
+    blue_house_editor = Entry(editor, width=30)
+    blue_house_editor.grid(row=3, column=1)
+    yellow_house_editor = Entry(editor, width=30)
+    yellow_house_editor.grid(row=4, column=1)
+    green_house_editor = Entry(editor, width=30)
+    green_house_editor.grid(row=5, column=1)
+
+
+
+    #create text box labels
+    name_event_label = Label(editor, text= "Name of Event")
+    name_event_label.grid(row=0, column=0, pady=(10,0))
+    sport_event_label = Label(editor, text= "Is this a Sport?")
+    sport_event_label.grid(row=1, column=0)
+    red_house_label = Label(editor, text= "Red House Points")
+    red_house_label.grid(row=2, column=0)
+    blue_house_label = Label(editor, text= "Blue House Points")
+    blue_house_label.grid(row=3, column=0)
+    yellow_house_label = Label(editor, text= "Yellow House Points")
+    yellow_house_label.grid(row=4, column=0)
+    green_house_label = Label(editor, text= "Green House Points")
+    green_house_label.grid(row=5, column=0)
+     
+
+
+    #loop thru results
+    for record in records:
+        name_event_editor.insert(0, record[0])
+        sport_event_editor.insert(0, record[1])
+        red_house_editor.insert(0, record[2])
+        blue_house_editor.insert(0, record[3])
+        yellow_house_editor.insert(0, record[4])
+        green_house_editor.insert(0, record[5])
+
+    #create a save button to save edited record
+    edit_btn = Button(editor, text="Save Record", command=update)
+    edit_btn.grid(row=6, column=0, columnspan=2, pady=10, padx=10, ipadx=145)
+
+
+
+
+#create function to delete a record
+def delete():
+    #Create a database or connect to one
+    conn = sqlite3.connect('prototype_number1.db')
+    #create cursor
+    c = conn.cursor()
+
+    #delete a record
+    c.execute("DELETE from events WHERE oid = " + delete_box.get())
+
+    delete_box.delete(0, END)
+
+    #commit change
+    conn.commit()
+
+    #close connection
+    conn.close()   
+
+
+
+
+#create submit function for database
+def submit():
+    #Create a database or connect to one
+    conn = sqlite3.connect('prototype_number1.db')
+    #create cursor
+    c = conn.cursor()
+    global winner
+    #insert into table
+    c.execute("INSERT INTO events VALUES (:name_event, :sport_event, :red_house, :blue_house, :yellow_house, :green_house)",
+            {
+                'name_event': name_event.get(),
+                'sport_event': sport_event.get(),
+                'red_house': int(float(red_house.get())),
+                'blue_house': int(float(blue_house.get())),
+                'yellow_house': int(float(yellow_house.get())),
+                'green_house': int(float(green_house.get())),
+            })
+    points = [int(float(red_house.get())), int(float(blue_house.get())), int(float(yellow_house.get())), int(float(green_house.get()))]
+    
+    if int(float(red_house.get())) > 100 or int(float(blue_house.get())) > 100 or int(float(yellow_house.get())) > 100 or int(float(green_house.get())) > 100:
+            messagebox.showwarning("Error", "Enter a value below 100")
+
+
+
+    #commit change
+    conn.commit()
+
+    #close connection
+    conn.close()
+
+
+    #clear the text boxes
+    name_event.delete(0, END)
+    sport_event.delete(0, END)
+    red_house.delete(0, END)
+    blue_house.delete(0, END)
+    yellow_house.delete(0, END)
+    green_house.delete(0, END)
+
+
+# create query function
+def query():
+    precord = Tk()
+    precord.title('Show a record')
+    precord.geometry("400x200")
+    #Create a database or connect to one
+    conn = sqlite3.connect('prototype_number1.db')
+    #create cursor
+    c = conn.cursor()
+    global delete_box
+    record_id = delete_box.get() 
+    c.execute("SELECT * FROM events WHERE oid = " + record_id)
+    records = c.fetchall()
+
+    #create global variables for text box names
+    global name_event_precord
+    global sport_event_precord
+    global red_house_precord
+    global blue_house_precord
+    global yellow_house_precord
+    global green_house_precord
+    global winner
+
+    name_event_precord = Entry(precord, width=30)
+    name_event_precord.grid(row=0, column=1, padx=20, pady=(10,0))
+    sport_event_precord = Entry(precord, width=30)
+    sport_event_precord.grid(row=1, column=1)
+    red_house_precord = Entry(precord, width=30)
+    red_house_precord.grid(row=2, column=1)
+    blue_house_precord = Entry(precord, width=30)
+    blue_house_precord.grid(row=3, column=1)
+    yellow_house_precord = Entry(precord, width=30)
+    yellow_house_precord.grid(row=4, column=1)
+    green_house_precord = Entry(precord, width=30)
+    green_house_precord.grid(row=5, column=1)
+    winner = Entry(precord, width=30)
+    winner.grid(row=6, column=1)
+
+
+    #create text box labels
+    name_event_label = Label(precord, text= "Name of Event")
+    name_event_label.grid(row=0, column=0, pady=(10,0))
+    sport_event_label = Label(precord, text= "Is this a Sport?")
+    sport_event_label.grid(row=1, column=0)
+    red_house_label = Label(precord, text= "Red House Points")
+    red_house_label.grid(row=2, column=0)
+    blue_house_label = Label(precord, text= "Blue House Points")
+    blue_house_label.grid(row=3, column=0)
+    yellow_house_label = Label(precord, text= "Yellow House Points")
+    yellow_house_label.grid(row=4, column=0)
+    green_house_label = Label(precord, text= "Green House Points")
+    green_house_label.grid(row=5, column=0)
+    winner_label = Label(precord, text= "Winner")
+    winner_label.grid(row=6, column=0)
+
+
+    #loop thru results
+    for record in records:
+        name_event_precord
+        name_event_precord.insert(0, record[0])
+        sport_event_precord.insert(0, record[1])
+        red_house_precord.insert(0, record[2])
+        blue_house_precord.insert(0, record[3])
+        yellow_house_precord.insert(0, record[4])
+        green_house_precord.insert(0, record[5])
+
+    
+
+
+
+
+    #commit change
+    conn.commit()
+
+    #close connection
+    conn.close()
+
+
+
+
+
+#create text boxes
+name_event = Entry(root, width=30)
+name_event.grid(row=0, column=1, padx=20, pady=(10,0))
+sport_event = Entry(root, width=30)
+sport_event.grid(row=1, column=1)
+red_house = Entry(root, width=30)
+red_house.grid(row=2, column=1)
+blue_house = Entry(root, width=30)
+blue_house.grid(row=3, column=1)
+yellow_house = Entry(root, width=30)
+yellow_house.grid(row=4, column=1)
+green_house = Entry(root, width=30)
+green_house.grid(row=5, column=1)
+delete_box = Entry(root, width=30)
+delete_box.grid(row=9, column=1, pady=5)
+
+
+#create text box labels
+name_event_label = Label(root, text= "Name of Event")
+name_event_label.grid(row=0, column=0, pady=(10,0))
+sport_event_label = Label(root, text= "Is this a Sport?")
+sport_event_label.grid(row=1, column=0)
+red_house_label = Label(root, text= "Red House Points")
+red_house_label.grid(row=2, column=0)
+blue_house_label = Label(root, text= "Blue House Points")
+blue_house_label.grid(row=3, column=0)
+yellow_house_label = Label(root, text= "Yellow House Points")
+yellow_house_label.grid(row=4, column=0)
+green_house_label = Label(root, text= "Green House Points")
+green_house_label.grid(row=5, column=0)
+delete_box_label = Label(root, text="Select ID Record")
+delete_box_label.grid(row=9, column=0, pady=5)
+
+
+#create submit button
+submit_btn = Button(root, text="Add Event to Database", command=submit) 
+submit_btn.grid(row=6, column=0, columnspan=2, pady=10, padx=10, ipadx=100)
+
+#create a Query button
+query_btn = Button(root, text="Show Selected ID Records", command=query)
+query_btn.grid(row=10, column=0, columnspan=2, pady=10, padx=10, ipadx=90)
+
+idbutton_btn = Button(root, text="Show ID Records", command=QueryValue)
+idbutton_btn.grid(row=7, column=0, columnspan=3, pady=10, padx=10, ipadx=115)
+
+#create a delete button
+delete_btn = Button(root, text="Delete Selected ID Record", command=delete)
+delete_btn.grid(row=13, column=0, columnspan=2, pady=10, padx=10, ipadx=90)
+
+#create a update button
+edit_btn = Button(root, text="Edit Selected ID Record", command=edit)
+edit_btn.grid(row=11, column=0, columnspan=2, pady=10, padx=10, ipadx=97)
+
+
+
+#commit change
+conn.commit()
+
+#close connection
+conn.close()
+
+
+root.mainloop()
+
+
