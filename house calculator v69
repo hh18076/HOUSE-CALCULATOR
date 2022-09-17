@@ -27,7 +27,7 @@ c.execute("""CREATE TABLE events (
         yellow_house integer,
         green_house integer
         )""")
-
+#AFter table is create put " ''' " before c.excute and after )""")
 
 
 
